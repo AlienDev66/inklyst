@@ -11,7 +11,13 @@
     "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "baseUrl": ".",
+    "paths": {
+      "@pagina/domain": ["./packages/domain/src/index.ts"],
+      "@pagina/supabase": ["./packages/supabase/src/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "packages"],
+  "exclude": ["packages/**/*.test.ts", "node_modules", "dist"]
 }

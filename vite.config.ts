@@ -7,10 +7,10 @@ export default defineConfig({
   resolve: {
     alias: {
       "@pagina/domain": fileURLToPath(
-        new URL("../../packages/domain/src/index.ts", import.meta.url),
+        new URL("./packages/domain/src/index.ts", import.meta.url),
       ),
       "@pagina/supabase": fileURLToPath(
-        new URL("../../packages/supabase/src/index.ts", import.meta.url),
+        new URL("./packages/supabase/src/index.ts", import.meta.url),
       ),
     },
   },

@@ -8,8 +8,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@pagina/domain": "workspace:*",
-    "@pagina/supabase": "workspace:*",
+    "@pagina/domain": "file:./packages/domain",
+    "@pagina/supabase": "file:./packages/supabase",
+    "@supabase/supabase-js": "^2.117.2",
     "jspdf": "^4.2.1",
     "jszip": "^3.10.2",
     "lucide-react": "^0.544.0",
