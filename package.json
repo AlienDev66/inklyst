@@ -1,0 +1,27 @@
+{
+  "name": "@pagina/web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@pagina/domain": "workspace:*",
+    "@pagina/supabase": "workspace:*",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.2",
+    "lucide-react": "^0.544.0",
+    "motion": "^12.23.22",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "~5.9.2",
+    "vite": "^7.1.7"
+  }
+}

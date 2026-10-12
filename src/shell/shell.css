@@ -1,0 +1,251 @@
+.space-switch-dock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.space-switch {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: color-mix(in oklab, var(--panel, #1a1814) 88%, transparent);
+  border: 1px solid color-mix(in oklab, var(--line, #3a342c) 80%, transparent);
+}
+
+.space-switch.compact {
+  width: 100%;
+}
+
+.space-switch-btn {
+  flex: 1;
+  border: 0;
+  background: transparent;
+  color: var(--mute, #9a9084);
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.space-switch-btn.on {
+  background: color-mix(in oklab, var(--accent, #c4784a) 22%, transparent);
+  color: var(--bone, #f3ebe0);
+}
+
+.intent-screen .intent-card {
+  max-width: 440px;
+}
+
+.intent-grid {
+  display: grid;
+  gap: 0.65rem;
+  margin: 1.25rem 0 1.5rem;
+}
+
+.intent-option {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  column-gap: 0.85rem;
+  row-gap: 0.15rem;
+  text-align: left;
+  padding: 0.95rem 1rem;
+  border-radius: 14px;
+  border: 1px solid color-mix(in oklab, var(--line, #3a342c) 90%, transparent);
+  background: color-mix(in oklab, var(--panel, #1a1814) 70%, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+
+.intent-option.on {
+  border-color: color-mix(in oklab, var(--accent, #c4784a) 65%, transparent);
+  box-shadow: inset 0 0 0 1px color-mix(in oklab, var(--accent, #c4784a) 35%, transparent);
+}
+
+.intent-ico {
+  grid-row: span 2;
+  align-self: center;
+  color: var(--accent, #c4784a);
+}
+
+.intent-option strong {
+  font-size: 1.05rem;
+}
+
+.intent-option small {
+  color: var(--mute, #9a9084);
+}
+
+.bridge-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 1.25rem;
+  background: color-mix(in oklab, #0c0a08 72%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.bridge-card {
+  position: relative;
+  width: min(420px, 100%);
+  padding: 1.75rem 1.5rem 1.5rem;
+  border-radius: 18px;
+  background: var(--panel, #16130f);
+  border: 1px solid color-mix(in oklab, var(--line, #3a342c) 80%, transparent);
+  box-shadow: 0 24px 60px color-mix(in oklab, #000 45%, transparent);
+}
+
+.bridge-card h2 {
+  font-family: Newsreader, Georgia, serif;
+  font-weight: 520;
+  font-size: 1.65rem;
+  margin: 0.35rem 0 0.65rem;
+}
+
+.bridge-card .primary-btn {
+  margin-top: 1.25rem;
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+}
+
+.bridge-close {
+  position: absolute;
+  top: 0.75rem;
+  right: 0.75rem;
+}
+
+.reader-topnav {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.75rem 1.25rem;
+  padding: 0.75rem 1.25rem;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: color-mix(in oklab, var(--ink, #0e0c0a) 82%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid color-mix(in oklab, var(--line, #3a342c) 55%, transparent);
+}
+
+.reader-topnav .rd-mark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-shrink: 0;
+  text-decoration: none;
+  color: inherit;
+  font-family: Syne, "Instrument Sans", sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+/* Override studio global `nav { flex-direction: column }` */
+.reader-topnav nav.reader-nav-links,
+nav.reader-nav-links {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.15rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.reader-nav-links button {
+  border: 0;
+  background: transparent;
+  color: var(--mute, #9a9084);
+  font: inherit;
+  font-size: 0.9rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.reader-nav-links button.on,
+.reader-nav-links button:hover {
+  color: var(--bone, #f3ebe0);
+  background: color-mix(in oklab, var(--panel, #1a1814) 80%, transparent);
+}
+
+.reader-nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.reader-create-btn {
+  border: 1px solid color-mix(in oklab, var(--accent, #c4784a) 45%, transparent);
+  background: transparent;
+  color: var(--accent, #c4784a);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.reader-home-greet {
+  font-family: Newsreader, Georgia, serif;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  font-weight: 520;
+  margin: 0 0 0.35rem;
+}
+
+.reader-continue {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1.25rem 0 0.5rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--line, #3a342c) 50%, transparent);
+  margin-bottom: 1.5rem;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  background: transparent;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  color: inherit;
+}
+
+.reader-continue strong {
+  font-family: Newsreader, Georgia, serif;
+  font-size: 1.45rem;
+  font-weight: 520;
+}
+
+.reader-sensations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.75rem 0 1.5rem;
+}
+
+.reader-sensations span {
+  font-size: 0.85rem;
+  color: var(--mute, #9a9084);
+  padding: 0.35rem 0.7rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in oklab, var(--line, #3a342c) 60%, transparent);
+}
+
+.auth-brand {
+  margin: 0;
+  font-family: Syne, "Instrument Sans", sans-serif;
+  font-weight: 700;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+}
