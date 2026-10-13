@@ -471,16 +471,20 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
   }, [cloud, userId, edition?.id, screen]);
 
   const pages = edition?.pages ?? [];
-  const licensed = canRenderEdition({
-    licensee: paper
-      ? null
-      : ebookLicense ?? (edition && isSampleEdition(edition.id) ? "pagina-original" : ebookLicense),
+  /** Manuscript publish (Studio) ships pages in the snapshot — always readable digitally. */
+  const hasManuscriptPages = pages.some((pageText) => pageText.trim().length > 0);
+  const licensedFile = canRenderEdition({
+    licensee:
+      ebookLicense ??
+      (edition && isSampleEdition(edition.id) ? "pagina-original" : null),
   });
+  /** Paper mode hides the digital page on purpose; Digital shows manuscript pages or a licensed file. */
+  const showDigitalText = !paper && (hasManuscriptPages || licensedFile);
 
   useEffect(() => {
     if (!edition || screen !== "room") return;
-    if (isSampleEdition(edition.id)) {
-      setEbookLicense("pagina-original");
+    if (isSampleEdition(edition.id) || hasManuscriptPages) {
+      setEbookLicense(isSampleEdition(edition.id) ? "pagina-original" : "inklyst-manuscript");
       return;
     }
     if (!cloud || !edition.bookId) {
@@ -497,7 +501,7 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
     return () => {
       cancelled = true;
     };
-  }, [cloud, edition?.id, edition?.bookId, screen]);
+  }, [cloud, edition?.id, edition?.bookId, screen, hasManuscriptPages]);
   const transition = reduce
     ? { duration: 0 }
     : { duration: 0.34, ease: [0.22, 1, 0.36, 1] as const };
@@ -1322,7 +1326,7 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
                 animate={{ opacity: 1, y: 0 }}
                 transition={transition}
               >
-                {licensed && pages.length ? (
+                {showDigitalText && pages.length ? (
                   <>
                     <TtsPlayer
                       text={pages[page - 1] ?? ""}
@@ -1337,15 +1341,15 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
                       onOpenParagraph={(index, excerpt) => setParaOpen({ index, excerpt })}
                     />
                   </>
-                ) : licensed ? (
+                ) : showDigitalText ? (
                   <p className="hint">Sem texto nesta edição.</p>
                 ) : (
                   <>
                     <p className="rd-folio">{page}</p>
                     <p className="hint">
                       {paper
-                        ? "Modo papel: confirma a página com foto. O texto digital só aparece com licença (edition_files.licensee)."
-                        : "Sem licença digital nesta edição (edition_files). Usa Papel ou publica com ficheiro licenciado."}
+                        ? "Modo papel: confirma a página com uma foto. Para ler o texto no ecrã, muda para Digital."
+                        : "Esta edição ainda não tem texto digital. Publica de novo a partir do Studio, ou usa o modo Papel."}
                     </p>
                     {cloud && pair && userId ? (
                       <label className="rd-btn ghost" style={{ marginTop: 16, width: "fit-content" }}>
