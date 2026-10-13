@@ -1,4 +1,4 @@
-import { Bell, FolderPlus, Lightbulb, MoreHorizontal, Plus, Search } from "lucide-react";
+import { ArrowLeft, Bell, FolderPlus, Lightbulb, MoreHorizontal, Plus, Search, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "../../auth";
 import { isSupabaseConfigured, supabase } from "../../lib/supabase";
@@ -159,59 +159,61 @@ export function Library() {
 
   return (
     <section className="home" aria-label="Projetos" id="projetos">
-      <div className="home-hero">
-        <div className="home-bar">
-          <label className="home-search">
-            <Search size={16} />
-            <input
-              id="shelf-search"
-              value={query}
-              placeholder="Procurar projetos, notas, personagens..."
-              aria-label="Procurar projetos, notas, personagens"
-              onChange={(event) => setQuery(event.target.value)}
-            />
-            <kbd>⌘K</kbd>
-          </label>
-          <button type="button" className="icon-btn" aria-label="Avisos" onClick={() => setBell((value) => !value)}>
-            <Bell size={16} />
-          </button>
-          <img className="avatar" src="/avatar.jpg" alt="" />
-          {bell ? <p className="bell-pop">Sem novidades.</p> : null}
-        </div>
-        <p className="hero-kicker">Inklyst Studio</p>
-        <h1>
-          {books.length === 0 ? (
-            <>
-              O teu primeiro
-              <br />
-              projeto começa aqui.
-            </>
-          ) : (
-            <>
-              Os teus
-              <br />
-              projetos.
-            </>
-          )}
-        </h1>
-        <p className="hero-sub">
-          {books.length === 0
-            ? "Ficção, poesia, prosa, não-ficção ou direito — cada modo tem a sua estrutura."
-            : "Manuscritos por modo. A biblioteca de leitura fica no Reader."}
-        </p>
-        {books.length === 0 ? (
-          <div className="onboarding-cta">
-            <button type="button" className="ghost-btn" onClick={() => setCreating(true)}>
-              <Plus size={16} /> Criar o primeiro livro
+      {!creating ? (
+        <div className="home-hero">
+          <div className="home-bar">
+            <label className="home-search">
+              <Search size={16} />
+              <input
+                id="shelf-search"
+                value={query}
+                placeholder="Procurar projetos, notas, personagens..."
+                aria-label="Procurar projetos, notas, personagens"
+                onChange={(event) => setQuery(event.target.value)}
+              />
+              <kbd>⌘K</kbd>
+            </label>
+            <button type="button" className="icon-btn" aria-label="Avisos" onClick={() => setBell((value) => !value)}>
+              <Bell size={16} />
             </button>
-            <p className="fine">Escolhe o modo em baixo — o editor adapta-se (poemas, artigos, cenas…).</p>
+            <img className="avatar" src="/avatar.jpg" alt="" />
+            {bell ? <p className="bell-pop">Sem novidades.</p> : null}
           </div>
-        ) : null}
-      </div>
+          <p className="hero-kicker">Inklyst Studio</p>
+          <h1>
+            {books.length === 0 ? (
+              <>
+                O teu primeiro
+                <br />
+                projecto começa aqui.
+              </>
+            ) : (
+              <>
+                Os teus
+                <br />
+                projectos.
+              </>
+            )}
+          </h1>
+          <p className="hero-sub">
+            {books.length === 0
+              ? "Ficção, poesia, prosa, não-ficção ou direito — cada modo tem a sua estrutura."
+              : "Manuscritos por modo. A biblioteca de leitura fica no Reader."}
+          </p>
+          {books.length === 0 ? (
+            <div className="onboarding-cta">
+              <button type="button" className="ghost-btn" onClick={() => setCreating(true)}>
+                <Plus size={16} /> Criar o primeiro livro
+              </button>
+              <p className="fine">Escolhe o modo em baixo — o editor adapta-se (poemas, artigos, cenas…).</p>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
 
       {creating ? (
         <form
-          className="cadastro home-create"
+          className="create-stage"
           onSubmit={(event) => {
             event.preventDefault();
             addBook({
@@ -228,92 +230,183 @@ export function Library() {
             setCreating(false);
           }}
         >
-          <label className="cover-upload">
-            <CoverFace
-              size="hero"
-              book={{
-                title: draft.title || "Sem título",
-                penName: draft.penName,
-                kind: draft.kind,
-                cover: { hue: draft.hue, image: draft.image },
+          <header className="create-stage-head">
+            <button
+              type="button"
+              className="create-back"
+              onClick={() => {
+                setDraft(EMPTY);
+                setCreating(false);
               }}
-            />
-            <span>{draft.image ? "Trocar a imagem da capa" : "Adicionar imagem da capa"}</span>
-            <input type="file" accept="image/*" aria-label="Imagem da capa" onChange={(event) => void onFile(event.target.files?.[0])} />
-          </label>
-          <div className="cadastro-fields">
-            <p className="eyebrow">Novo livro</p>
-            <label>
-              <span>Título</span>
-              <input value={draft.title} autoFocus placeholder="Um título, mesmo provisório" aria-label="Título do livro" onChange={(event) => setDraft({ ...draft, title: event.target.value })} />
-            </label>
-            <label>
-              <span>Nome na capa</span>
-              <input value={draft.penName} placeholder="Opcional" aria-label="Nome na capa" onChange={(event) => setDraft({ ...draft, penName: event.target.value })} />
-            </label>
-            <label>
-              <span>Modo do projecto</span>
-              <select
-                aria-label="Modo do projecto"
-                value={draft.storyType}
-                onChange={(event) => {
-                  const storyType = event.target.value as StoryType;
-                  const project = modeOf(storyType);
-                  setDraft({
-                    ...draft,
-                    storyType,
-                    kind: project.defaultKind,
-                    genre: project.genres[0] ?? "",
-                  });
-                }}
-              >
-                {ALL_STORY_TYPES.map((type) => (
-                  <option key={type} value={type}>{STORY_TYPE_LABEL[type]}</option>
-                ))}
-              </select>
-              <small className="fine">{modeOf(draft.storyType).blurb}</small>
-            </label>
-            <label>
-              <span>Forma</span>
-              <select aria-label="Forma do livro" value={draft.kind} onChange={(event) => setDraft({ ...draft, kind: event.target.value as BookKind })}>
-                {(Object.keys(KIND_LABEL) as BookKind[]).map((kind) => (
-                  <option key={kind} value={kind}>{KIND_LABEL[kind]}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Sinopse / descrição</span>
-              <textarea value={draft.pitch} placeholder="Uma frase que te oriente. Não é o primeiro capítulo." aria-label="Sinopse do livro" onChange={(event) => setDraft({ ...draft, pitch: event.target.value })} />
-            </label>
-            <label>
-              <span>Género</span>
-              <select
-                aria-label="Género"
-                value={draft.genre}
-                onChange={(event) => setDraft({ ...draft, genre: event.target.value })}
-              >
-                {genresFor(draft.storyType).map((genre) => (
-                  <option key={genre} value={genre}>{genre}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Tags</span>
-              <input
-                value={draft.tags}
-                placeholder="Separadas por espaço"
-                aria-label="Tags"
-                onChange={(event) => setDraft({ ...draft, tags: event.target.value })}
-              />
-            </label>
-            <div className="hues" role="list" aria-label="Cor da capa">
-              {COVER_HUES.map((hue) => (
-                <button key={hue} type="button" className={draft.hue === hue && !draft.image ? "hue on" : "hue"} style={{ background: `hsl(${hue} 34% 36%)` }} aria-label={`Cor ${hue}`} onClick={() => setDraft({ ...draft, hue, image: undefined })} />
-              ))}
+            >
+              <ArrowLeft size={16} />
+              Projetos
+            </button>
+            <div>
+              <p className="desk-kicker">Studio</p>
+              <h2>Novo projecto</h2>
+              <p className="fine">{modeOf(draft.storyType).blurb}</p>
             </div>
-            <div className="create-actions">
-              <button type="submit" className="send">Abrir o livro</button>
-              <button type="button" className="text-btn" onClick={() => setCreating(false)}>Voltar aos projetos</button>
+          </header>
+
+          <fieldset className="create-modes">
+            <legend>Que tipo de obra é?</legend>
+            <div className="create-mode-grid" role="listbox" aria-label="Modo do projecto">
+              {ALL_STORY_TYPES.map((type) => {
+                const project = modeOf(type);
+                const on = draft.storyType === type;
+                return (
+                  <button
+                    key={type}
+                    type="button"
+                    role="option"
+                    aria-selected={on}
+                    className={on ? "create-mode on" : "create-mode"}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        storyType: type,
+                        kind: project.defaultKind,
+                        genre: project.genres[0] ?? "",
+                      })
+                    }
+                  >
+                    <strong>{project.label}</strong>
+                    <small>{project.chapterLabelPlural}</small>
+                  </button>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          <div className="create-body">
+            <div className="create-cover-panel">
+              <div className="create-cover-glow" aria-hidden />
+              <label className="create-cover">
+                <CoverFace
+                  size="hero"
+                  book={{
+                    title: draft.title || "Sem título",
+                    penName: draft.penName,
+                    kind: draft.kind,
+                    cover: { hue: draft.hue, image: draft.image },
+                  }}
+                />
+                <span className="create-cover-cta">
+                  <Upload size={14} />
+                  {draft.image ? "Trocar capa" : "Imagem da capa"}
+                </span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  aria-label="Imagem da capa"
+                  onChange={(event) => void onFile(event.target.files?.[0])}
+                />
+              </label>
+              <div className="create-hues" role="list" aria-label="Cor da capa">
+                {COVER_HUES.map((hue) => (
+                  <button
+                    key={hue}
+                    type="button"
+                    className={draft.hue === hue && !draft.image ? "hue on" : "hue"}
+                    style={{ background: `hsl(${hue} 34% 36%)` }}
+                    aria-label={`Cor ${hue}`}
+                    onClick={() => setDraft({ ...draft, hue, image: undefined })}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div className="create-fields">
+              <label className="create-field">
+                <span>Título</span>
+                <input
+                  value={draft.title}
+                  autoFocus
+                  placeholder="Um título, mesmo provisório"
+                  aria-label="Título do livro"
+                  onChange={(event) => setDraft({ ...draft, title: event.target.value })}
+                />
+              </label>
+              <label className="create-field">
+                <span>Nome na capa</span>
+                <input
+                  value={draft.penName}
+                  placeholder="Opcional"
+                  aria-label="Nome na capa"
+                  onChange={(event) => setDraft({ ...draft, penName: event.target.value })}
+                />
+              </label>
+              <label className="create-field">
+                <span>Em poucas linhas</span>
+                <textarea
+                  value={draft.pitch}
+                  placeholder="O que é esta obra — sem ser o primeiro capítulo."
+                  aria-label="Sinopse do livro"
+                  rows={3}
+                  onChange={(event) => setDraft({ ...draft, pitch: event.target.value })}
+                />
+              </label>
+
+              <fieldset className="create-genres">
+                <legend>Género</legend>
+                <div className="create-genre-row">
+                  {genresFor(draft.storyType).slice(0, 8).map((genre) => {
+                    const on = draft.genre === genre;
+                    return (
+                      <button
+                        key={genre}
+                        type="button"
+                        className={on ? "chip on" : "chip"}
+                        onClick={() => setDraft({ ...draft, genre })}
+                      >
+                        {genre}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <details className="create-more">
+                <summary>Forma, tags e detalhes</summary>
+                <label className="create-field">
+                  <span>Forma</span>
+                  <select
+                    aria-label="Forma do livro"
+                    value={draft.kind}
+                    onChange={(event) => setDraft({ ...draft, kind: event.target.value as BookKind })}
+                  >
+                    {(Object.keys(KIND_LABEL) as BookKind[]).map((kind) => (
+                      <option key={kind} value={kind}>{KIND_LABEL[kind]}</option>
+                    ))}
+                  </select>
+                </label>
+                <label className="create-field">
+                  <span>Tags</span>
+                  <input
+                    value={draft.tags}
+                    placeholder="Separadas por espaço"
+                    aria-label="Tags"
+                    onChange={(event) => setDraft({ ...draft, tags: event.target.value })}
+                  />
+                </label>
+              </details>
+
+              <div className="create-actions">
+                <button type="submit" className="create-submit">
+                  Começar a escrever
+                </button>
+                <button
+                  type="button"
+                  className="text-btn"
+                  onClick={() => {
+                    setDraft(EMPTY);
+                    setCreating(false);
+                  }}
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
         </form>
