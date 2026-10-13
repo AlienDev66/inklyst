@@ -20,7 +20,6 @@ import {
   Focus,
   GripVertical,
   History,
-  Image as ImageIcon,
   Italic,
   LayoutGrid,
   Lightbulb,
