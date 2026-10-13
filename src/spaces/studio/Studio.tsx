@@ -939,7 +939,7 @@ export function Studio() {
           )
         : null}
 
-      <section className="stage">
+      <section className={`stage stage-mode-${project.editorClass}`} data-project-mode={project.id}>
         <div className="stage-tools">
           {section === "manuscript" ? (
             <>
@@ -980,6 +980,9 @@ export function Studio() {
                       world={book.research}
                       timeline={book.timeline}
                       editorClass={project.editorClass}
+                      modeLabel={project.label}
+                      modeHint={project.blurb}
+                      bookKind={book.kind}
                       kicker={
                         scene
                           ? `${project.sceneLabel} · ${chapter.title || project.chapterLabel}`
@@ -2213,6 +2216,9 @@ function EditorPage({
   timeline,
   kicker,
   editorClass = "prose",
+  modeLabel = "Ficção",
+  modeHint = "",
+  bookKind = "romance",
   setMode,
   onTitle,
   onBody,
@@ -2222,6 +2228,9 @@ function EditorPage({
   timeline: TimelineEvent[];
   kicker: string;
   editorClass?: "prose" | "verse" | "legal" | "essay";
+  modeLabel?: string;
+  modeHint?: string;
+  bookKind?: Book["kind"];
   setMode: (mode: Mode) => void;
   onTitle: (title: string) => void;
   onBody: (body: string) => void;
@@ -2369,58 +2378,83 @@ function EditorPage({
   const activeFilterLabel = mention && mention.filter !== "all" ? MENTION_KIND_META[mention.filter].label : null;
 
   const placeholders: Record<typeof editorClass, string> = {
-    prose: "Escreve como num documento. Usa @ para trazer pessoas, lugares ou tempos do mundo.",
-    verse: "Um verso por linha. O espaço em branco também conta.",
-    legal: "Artigo, número, alínea — tipografia jurídica. Usa @ para citar fichas.",
-    essay: "Prosa contínua. Argumento, exemplo, conclusão.",
+    prose: "Começa a cena. O parágrafo seguinte já é o livro.",
+    verse: "Um verso por linha.\nDeixa o silêncio em branco quando precisares.",
+    legal: "Art. …\n1. …\na) …",
+    essay: "Primeira frase. Depois o argumento — sem pressa de enredo.",
   };
+  const isVerse = editorClass === "verse";
+  const isLegal = editorClass === "legal";
+  const isEssay = editorClass === "essay";
+  const wordUnit = isVerse ? "versos ≈" : "palavras";
+  const words = countWords(writing.body);
 
   return (
-    <div className={`leaf editor-${editorClass}`}>
+    <div className={`leaf editor-${editorClass} kind-${bookKind}`} data-editor-mode={editorClass}>
+      <div className="editor-mode-bar">
+        <span className="editor-mode-chip">{modeLabel}</span>
+        <span className="editor-mode-hint">{modeHint}</span>
+      </div>
       <p className="chapter-kicker">{kicker}</p>
       <input
         className="chapter-title"
         value={writing.title}
         aria-label="Título"
+        placeholder={isVerse ? "Título do poema" : isLegal ? "Artigo / secção" : "Título"}
         onChange={(event) => onTitle(event.target.value)}
       />
       <p className="chapter-meta">
         <Calendar size={13} />
         <span>{date}</span>
-        <span>{countWords(writing.body).toLocaleString("pt-PT")} palavras</span>
+        <span>
+          {isVerse
+            ? `${Math.max(1, writing.body.split(/\n/).filter((l) => l.trim()).length)} linhas`
+            : `${words.toLocaleString("pt-PT")} ${wordUnit}`}
+        </span>
       </p>
-      <div className="rtbar" role="toolbar" aria-label="Formatação">
+      <div className={`rtbar rtbar-${editorClass}`} role="toolbar" aria-label="Formatação">
         <button type="button" aria-label="Desfazer" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("undo")}><Undo2 size={15} /></button>
         <button type="button" aria-label="Refazer" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("redo")}><Redo2 size={15} /></button>
-        <span className="rt-gap" />
-        <div className="rt-drop">
-          <button type="button" className="rt-text" onClick={() => setMenu((value) => !value)}>
-            Texto <ChevronDown size={13} />
-          </button>
-          {menu ? (
-            <div className="card-menu">
-              <button type="button" onClick={() => { setMode("text"); setMenu(false); }}>Texto</button>
-              <button type="button" onClick={() => { setMode("cork"); setMenu(false); }}><LayoutGrid size={14} /> Fichas</button>
-              <button type="button" onClick={() => { setMode("outline"); setMenu(false); }}><List size={14} /> Lista</button>
-              <button type="button" onClick={() => { setMode("flow"); setMenu(false); }}><AlignJustify size={14} /> Contínuo</button>
+        {!isVerse ? (
+          <>
+            <span className="rt-gap" />
+            <div className="rt-drop">
+              <button type="button" className="rt-text" onClick={() => setMenu((value) => !value)}>
+                Vista <ChevronDown size={13} />
+              </button>
+              {menu ? (
+                <div className="card-menu">
+                  <button type="button" onClick={() => { setMode("text"); setMenu(false); }}>Texto</button>
+                  <button type="button" onClick={() => { setMode("cork"); setMenu(false); }}><LayoutGrid size={14} /> Fichas</button>
+                  <button type="button" onClick={() => { setMode("outline"); setMenu(false); }}><List size={14} /> Lista</button>
+                  <button type="button" onClick={() => { setMode("flow"); setMenu(false); }}><AlignJustify size={14} /> Contínuo</button>
+                </div>
+              ) : null}
             </div>
-          ) : null}
-        </div>
+          </>
+        ) : null}
         <button type="button" aria-label="Negrito" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("bold")}><Bold size={15} /></button>
         <button type="button" aria-label="Itálico" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("italic")}><Italic size={15} /></button>
-        <button type="button" aria-label="Sublinhado" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("underline")}><Underline size={15} /></button>
-        <span className="rt-gap" />
-        <button type="button" aria-label="Lista" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("insertUnorderedList")}><List size={15} /></button>
-        <button type="button" aria-label="Lista numerada" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("insertOrderedList")}><ListOrdered size={15} /></button>
-        <button type="button" aria-label="Ligação" onMouseDown={(event) => event.preventDefault()} onClick={() => {
-          const url = window.prompt("Endereço da ligação");
-          if (url) cmd("createLink", url);
-        }}><Link2 size={15} /></button>
-        <button type="button" aria-label="A imagem não entra no capítulo" onMouseDown={(event) => event.preventDefault()}><ImageIcon size={15} /></button>
+        {!isVerse ? (
+          <button type="button" aria-label="Sublinhado" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("underline")}><Underline size={15} /></button>
+        ) : null}
+        {!isVerse ? (
+          <>
+            <span className="rt-gap" />
+            <button type="button" aria-label="Lista" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("insertUnorderedList")}><List size={15} /></button>
+            <button type="button" aria-label="Lista numerada" onMouseDown={(event) => event.preventDefault()} onClick={() => cmd("insertOrderedList")}><ListOrdered size={15} /></button>
+          </>
+        ) : null}
+        {isLegal || isEssay ? (
+          <button type="button" aria-label="Ligação" onMouseDown={(event) => event.preventDefault()} onClick={() => {
+            const url = window.prompt("Endereço da ligação");
+            if (url) cmd("createLink", url);
+          }}><Link2 size={15} /></button>
+        ) : null}
       </div>
       <div
         ref={ref}
-        className={`prose-page mode-${editorClass}`}
+        className={`prose-page mode-${editorClass} kind-${bookKind}`}
         role="textbox"
         aria-multiline="true"
         aria-label="Texto"

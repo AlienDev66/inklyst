@@ -2099,6 +2099,15 @@ body { background: var(--shell); }
   border-color: rgba(26, 23, 20, 0.1);
   color: #5c554c;
 }
+[data-theme="light"] .editor-mode-chip {
+  border-color: rgba(184, 115, 63, 0.35);
+  background: rgba(184, 115, 63, 0.12);
+  color: #8a4e22;
+}
+[data-theme="light"] .editor-mode-hint { color: #6e655c; }
+[data-theme="light"] .leaf.editor-legal {
+  border-left-color: rgba(184, 115, 63, 0.35);
+}
 
 .studio {
   position: relative;
@@ -2682,31 +2691,155 @@ body:has(.studio):not(:has(.lp-demo)) {
   color: var(--text);
   outline: none;
 }
+
+.editor-mode-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  align-items: baseline;
+  margin-bottom: 14px;
+}
+.editor-mode-chip {
+  display: inline-flex;
+  align-items: center;
+  height: 26px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(201, 132, 74, 0.4);
+  background: rgba(201, 132, 74, 0.14);
+  color: #e8c4a0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.editor-mode-hint {
+  color: #8a8278;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+/* Atmosphere by project mode */
+.stage-mode-verse {
+  background:
+    radial-gradient(80% 50% at 50% 0%, rgba(201, 132, 74, 0.08), transparent 55%),
+    var(--bg);
+}
+.stage-mode-legal {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 120px),
+    var(--bg);
+}
+.stage-mode-essay {
+  background:
+    radial-gradient(70% 40% at 20% 0%, rgba(180, 160, 120, 0.06), transparent 50%),
+    var(--bg);
+}
+
+.leaf.editor-verse {
+  max-width: 520px;
+  margin-inline: auto;
+  text-align: center;
+}
+.leaf.editor-verse .chapter-title,
+.leaf.editor-verse .chapter-kicker,
+.leaf.editor-verse .chapter-meta,
+.leaf.editor-verse .editor-mode-bar {
+  text-align: center;
+  justify-content: center;
+}
+.leaf.editor-verse .rtbar {
+  justify-content: center;
+}
+.leaf.editor-legal {
+  max-width: 720px;
+  padding-inline: 8px;
+  border-left: 2px solid rgba(201, 132, 74, 0.28);
+}
+.leaf.editor-essay {
+  max-width: 640px;
+}
+.leaf.editor-prose.kind-conto {
+  max-width: 560px;
+}
+.leaf.editor-prose.kind-novela {
+  max-width: 640px;
+}
+.leaf.editor-prose.kind-romance {
+  max-width: 680px;
+}
+
 .prose-page.mode-verse {
-  font-size: 19px;
-  line-height: 1.95;
+  margin-inline: auto;
+  max-width: 28em;
+  min-height: 52vh;
+  padding: 8px 4px 48px;
+  font-family: Newsreader, Georgia, "Iowan Old Style", serif;
+  font-size: 21px;
+  font-weight: 400;
+  line-height: 2.05;
+  letter-spacing: 0.01em;
+  text-align: left;
   white-space: pre-wrap;
-  max-width: 36em;
 }
 .prose-page.mode-legal {
+  max-width: 42em;
   font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Newsreader, serif;
-  font-size: 16.5px;
-  line-height: 1.65;
+  font-size: 16px;
+  line-height: 1.62;
+  letter-spacing: 0.005em;
 }
 .prose-page.mode-legal p { text-indent: 0; margin: 0.55em 0; }
 .prose-page.mode-essay {
+  max-width: 36em;
   font-size: 17.5px;
-  line-height: 1.8;
-  max-width: 38em;
+  line-height: 1.85;
 }
+.prose-page.mode-essay p,
+.prose-page.mode-prose p {
+  text-indent: 1.1em;
+  margin: 0 0 0.15em;
+}
+.prose-page.mode-essay p:first-child,
+.prose-page.mode-prose p:first-child {
+  text-indent: 0;
+}
+.prose-page.mode-prose.kind-conto {
+  font-size: 18.5px;
+  line-height: 1.7;
+}
+.prose-page.mode-prose.kind-romance {
+  font-size: 18px;
+  line-height: 1.8;
+}
+
 .editor-verse .chapter-title {
   font-family: Newsreader, Georgia, serif;
   font-style: italic;
   font-weight: 500;
+  font-size: clamp(28px, 4vw, 36px);
+  text-align: center;
 }
 .editor-legal .chapter-title {
   font-variant: small-caps;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.06em;
+  font-size: 26px;
+}
+.editor-essay .chapter-title {
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.editor-verse .chapter-kicker {
+  letter-spacing: 0.18em;
+}
+.rtbar-verse {
+  background: transparent;
+  border-color: transparent;
+}
+.editor-legal .editor-mode-chip {
+  border-color: rgba(180, 180, 190, 0.35);
+  background: rgba(255, 255, 255, 0.06);
+  color: #d8d4cc;
 }
 .sync-banner {
   display: flex;
