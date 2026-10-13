@@ -79,6 +79,7 @@ import { exportDocx, exportEpub, exportMarkdown } from "./exportBook";
 import { PdfExportDialog } from "./PdfExportDialog";
 import { shareWritingProcess } from "./data/cloudSocial";
 import { openInReader } from "./shelfStore";
+import { modeOf } from "./projectMode";
 import { StoryInfo } from "./StoryInfo";
 import { useBooks, useChapter, type Binder } from "./store";
 import { useAuth } from "../../auth";
@@ -113,6 +114,7 @@ export function Studio() {
   const store = useBooks();
   const book = store.current;
   const chapter = useChapter(book);
+  const project = modeOf(book.storyType);
   const reduce = useReducedMotion();
   const section = store.binder as Section;
   const setSection = store.setBinder;
@@ -414,7 +416,7 @@ export function Studio() {
           }}
         >
           <Plus size={16} />
-          Novo capítulo
+          Novo {project.chapterLabel.toLowerCase()}
         </button>
         <div className="structure-adds">
           <button
@@ -425,28 +427,32 @@ export function Studio() {
               setSection("manuscript");
             }}
           >
-            Novo acto
+            Novo {project.partLabel.toLowerCase()}
           </button>
-          <button
-            type="button"
-            className="text-btn"
-            onClick={() => {
-              store.addScene(book.id, chapter.id);
-              setSection("manuscript");
-              setMode("text");
-            }}
-          >
-            Nova cena
-          </button>
+          {project.usesScenes ? (
+            <button
+              type="button"
+              className="text-btn"
+              onClick={() => {
+                store.addScene(book.id, chapter.id);
+                setSection("manuscript");
+                setMode("text");
+              }}
+            >
+              Nova {project.sceneLabel.toLowerCase()}
+            </button>
+          ) : null}
         </div>
 
         <p className="rail-section-label">
           {section === "manuscript"
-            ? "Capítulos"
+            ? project.chapterLabelPlural
             : section === "structure"
               ? "Estrutura"
               : section === "research"
-                ? "Mundo"
+                ? project.usesWorld
+                  ? "Mundo"
+                  : "Fichas"
                 : section === "bible"
                   ? "Bíblia"
                   : section === "timeline"
@@ -461,7 +467,7 @@ export function Studio() {
         </p>
 
         {section === "manuscript" || section === "notes" ? (
-          <nav className="binder-list" aria-label="Capítulos do manuscrito">
+          <nav className="binder-list" aria-label={`${project.chapterLabelPlural} do manuscrito`}>
             {(() => {
               const knownPartIds = new Set(book.parts.map((part) => part.id));
               const groups = [
@@ -559,7 +565,7 @@ export function Studio() {
                         setOverId(null);
                       }}
                     >
-                      <span>Sem parte</span>
+                      <span>Sem {project.partLabel.toLowerCase()}</span>
                     </p>
                   ) : null}
                   <AnimatePresence initial={false}>
@@ -714,7 +720,7 @@ export function Studio() {
                                       }}
                                     >
                                       <span className="scene-copy">
-                                        <span className="scene-kicker">Cena</span>
+                                        <span className="scene-kicker">{project.sceneLabel}</span>
                                         <span className="scene-title">{entry.title || "Sem título"}</span>
                                       </span>
                                       <small>{countWords(entry.body).toLocaleString("pt-PT")} palavras</small>
@@ -973,10 +979,11 @@ export function Studio() {
                       writing={writing}
                       world={book.research}
                       timeline={book.timeline}
+                      editorClass={project.editorClass}
                       kicker={
                         scene
-                          ? `Cena · ${chapter.title || "Capítulo"}`
-                          : `Capítulo ${String(book.chapters.findIndex((item) => item.id === chapter.id) + 1).padStart(2, "0")}`
+                          ? `${project.sceneLabel} · ${chapter.title || project.chapterLabel}`
+                          : `${project.chapterLabel} ${String(book.chapters.findIndex((item) => item.id === chapter.id) + 1).padStart(2, "0")}`
                       }
                       setMode={setMode}
                       onTitle={(title) => {
@@ -1917,7 +1924,29 @@ function Beside({
   const [suggestion, setSuggestion] = useState<string | null>(null);
   const questions: { id: string; title: string; hint: string; ask: string; color: string; icon: ReactNode }[] = [
     { id: "feedback", title: "Melhorar o texto", hint: "Uma leitura crítica do que escreveste.", ask: advisor.prompt, color: "#3b6fe8", icon: <MessageCircle size={16} /> },
-    { id: "scene", title: "Desenvolver a cena", hint: "Ideias para aprofundar este momento.", ask: "O que é que esta cena ainda não mostrou, e que só tu podes escrever?", color: "#e8892d", icon: <Sparkles size={16} /> },
+    {
+      id: "scene",
+      title:
+        modeOf(book.storyType).id === "poetry"
+          ? "Abrir o verso"
+          : modeOf(book.storyType).id === "legal"
+            ? "Afinar o artigo"
+            : "Desenvolver a cena",
+      hint:
+        modeOf(book.storyType).id === "poetry"
+          ? "Imagem, ritmo, silêncio."
+          : modeOf(book.storyType).id === "legal"
+            ? "Excepção, referência, clareza."
+            : "Ideias para aprofundar este momento.",
+      ask:
+        modeOf(book.storyType).id === "poetry"
+          ? "Que imagem ou silêncio este poema ainda não ousou?"
+          : modeOf(book.storyType).id === "legal"
+            ? "Que referência, excepção ou nuance jurídica falta aqui?"
+            : "O que é que esta cena ainda não mostrou, e que só tu podes escrever?",
+      color: "#e8892d",
+      icon: <Sparkles size={16} />,
+    },
     { id: "block", title: "Estou bloqueado", hint: "Uma pergunta para continuares.", ask: advisor.prompt, color: "#e07a2f", icon: <Lightbulb size={16} /> },
     { id: "continuity", title: "Há contradições?", hint: "Olha o livro inteiro por incoerências.", ask: "Existe alguma inconsistência na história?", color: "#c45c2a", icon: <Link2 size={16} /> },
   ];
@@ -2183,6 +2212,7 @@ function EditorPage({
   world,
   timeline,
   kicker,
+  editorClass = "prose",
   setMode,
   onTitle,
   onBody,
@@ -2191,6 +2221,7 @@ function EditorPage({
   world: ResearchNote[];
   timeline: TimelineEvent[];
   kicker: string;
+  editorClass?: "prose" | "verse" | "legal" | "essay";
   setMode: (mode: Mode) => void;
   onTitle: (title: string) => void;
   onBody: (body: string) => void;
@@ -2337,8 +2368,15 @@ function EditorPage({
   const date = new Date().toLocaleDateString("pt-PT", { day: "numeric", month: "long", year: "numeric" });
   const activeFilterLabel = mention && mention.filter !== "all" ? MENTION_KIND_META[mention.filter].label : null;
 
+  const placeholders: Record<typeof editorClass, string> = {
+    prose: "Escreve como num documento. Usa @ para trazer pessoas, lugares ou tempos do mundo.",
+    verse: "Um verso por linha. O espaço em branco também conta.",
+    legal: "Artigo, número, alínea — tipografia jurídica. Usa @ para citar fichas.",
+    essay: "Prosa contínua. Argumento, exemplo, conclusão.",
+  };
+
   return (
-    <div className="leaf">
+    <div className={`leaf editor-${editorClass}`}>
       <p className="chapter-kicker">{kicker}</p>
       <input
         className="chapter-title"
@@ -2382,13 +2420,13 @@ function EditorPage({
       </div>
       <div
         ref={ref}
-        className="prose-page"
+        className={`prose-page mode-${editorClass}`}
         role="textbox"
         aria-multiline="true"
         aria-label="Texto"
         contentEditable
         suppressContentEditableWarning
-        data-placeholder="Escreve como num documento. Usa @ para trazer pessoas, lugares ou tempos do mundo."
+        data-placeholder={placeholders[editorClass]}
         onFocus={() => { focused.current = true; }}
         onBlur={() => {
           focused.current = false;

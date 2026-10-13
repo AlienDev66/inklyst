@@ -145,12 +145,32 @@ function writeParagraphs(
   margin: number,
   pageH: number,
   font: "times" | "helvetica" | "courier" = "times",
+  verse = false,
 ) {
   doc.setFont(font, "normal");
   doc.setFontSize(size);
   doc.setTextColor(20);
-  const lineHeight = size * 1.55;
+  const lineHeight = size * (verse ? 1.85 : 1.55);
   let y = startY;
+
+  if (verse) {
+    const lines = (text || "").replace(/\r\n/g, "\n").split("\n");
+    for (const raw of lines) {
+      const line = raw.trimEnd();
+      if (!line.trim()) {
+        y += size * 0.7;
+        continue;
+      }
+      const wrapped = doc.splitTextToSize(line, width) as string[];
+      for (const row of wrapped) {
+        y = ensureSpace(doc, y, lineHeight, margin, pageH);
+        doc.text(row, x, y);
+        y += lineHeight;
+      }
+    }
+    return y;
+  }
+
   const paragraphs = (text || "").split(/\n\n+/);
 
   for (const para of paragraphs) {
@@ -228,7 +248,17 @@ function drawTitlePage(doc: jsPDF, book: Book, pageW: number, pageH: number) {
   doc.setTextColor(90);
   doc.setFont("times", "normal");
   doc.setFontSize(12);
-  doc.text(KIND_LABEL[book.kind].toUpperCase(), pageW / 2, pageH * 0.28, { align: "center" });
+  const modeLabel =
+    book.storyType === "poetry"
+      ? "POESIA"
+      : book.storyType === "legal"
+        ? "DIREITO"
+        : book.storyType === "prose"
+          ? "PROSA"
+          : book.storyType === "nonfiction"
+            ? "NÃO-FICÇÃO"
+            : KIND_LABEL[book.kind].toUpperCase();
+  doc.text(modeLabel, pageW / 2, pageH * 0.28, { align: "center" });
 
   doc.setTextColor(20);
   doc.setFont("times", "bold");
@@ -417,7 +447,15 @@ export async function exportPdf(book: Book, options: PdfOptions = {}) {
       doc.setFont(font, "normal");
       doc.setFontSize(fontSize);
       doc.setTextColor(120);
-      doc.text(`Capítulo ${block.chapterIndex + 1}`, pageW / 2, y - 28, { align: "center" });
+      const unit =
+        book.storyType === "poetry"
+          ? "Poema"
+          : book.storyType === "legal"
+            ? "Artigo"
+            : book.storyType === "prose"
+              ? "Texto"
+              : "Capítulo";
+      doc.text(`${unit} ${block.chapterIndex + 1}`, pageW / 2, y - 28, { align: "center" });
 
       doc.setTextColor(20);
       doc.setFont(font, "bold");
@@ -433,7 +471,18 @@ export async function exportPdf(book: Book, options: PdfOptions = {}) {
       y += 32;
 
       if (block.text.trim()) {
-        y = writeParagraphs(doc, block.text, margin, y, width, fontSize, margin, pageH, font);
+        y = writeParagraphs(
+          doc,
+          block.text,
+          margin,
+          y,
+          width,
+          fontSize,
+          margin,
+          pageH,
+          font,
+          book.storyType === "poetry",
+        );
       }
       continue;
     }
@@ -455,7 +504,18 @@ export async function exportPdf(book: Book, options: PdfOptions = {}) {
     }
     y += 8;
     if (block.text.trim()) {
-      y = writeParagraphs(doc, block.text, margin, y, width, fontSize, margin, pageH, font);
+      y = writeParagraphs(
+        doc,
+        block.text,
+        margin,
+        y,
+        width,
+        fontSize,
+        margin,
+        pageH,
+        font,
+        book.storyType === "poetry",
+      );
     }
   }
 

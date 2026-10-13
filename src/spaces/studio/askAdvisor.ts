@@ -33,6 +33,9 @@ function sliceBook(book: Book) {
   return {
     title: book.title,
     pitch: book.pitch,
+    storyType: book.storyType ?? "fiction",
+    genres: book.genres ?? [],
+    kind: book.kind,
     targetWords: book.targetWords,
     bible: book.bible,
     chapters: book.chapters.map((chapter) => ({

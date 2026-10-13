@@ -1,9 +1,9 @@
 import {
-  STORY_GENRES,
   STORY_TYPE_LABEL,
   type Book,
   type StoryType,
 } from "./books";
+import { ALL_STORY_TYPES, genresFor, modeOf } from "./projectMode";
 
 const COPYRIGHTS = [
   { id: "all-rights", label: "Todos os direitos reservados" },
@@ -18,6 +18,9 @@ export function StoryInfo({
   book: Book;
   onChange: (patch: Partial<Book>) => void;
 }) {
+  const storyType = (book.storyType ?? "fiction") as StoryType;
+  const project = modeOf(storyType);
+  const genreOptions = genresFor(storyType);
   const genres = book.genres ?? [];
   const tagsText = (book.tags ?? []).join(" ");
 
@@ -42,7 +45,13 @@ export function StoryInfo({
         <textarea
           rows={4}
           value={book.pitch}
-          placeholder="Em poucas linhas: do que é a história? Sem spoilers."
+          placeholder={
+            storyType === "legal"
+              ? "Em poucas linhas: tema, público e âmbito do livro."
+              : storyType === "poetry"
+                ? "O tom da colecção — sem spoilers dos poemas."
+                : "Em poucas linhas: do que é a obra? Sem spoilers."
+          }
           onChange={(event) => onChange({ pitch: event.target.value })}
         />
       </label>
@@ -60,14 +69,23 @@ export function StoryInfo({
       </label>
 
       <fieldset>
-        <legend>Que tipo de história é?</legend>
+        <legend>Modo do projecto</legend>
+        <p className="fine" style={{ marginTop: 0 }}>
+          {project.blurb}
+        </p>
         <div className="story-type-row">
-          {(Object.keys(STORY_TYPE_LABEL) as StoryType[]).map((type) => (
+          {ALL_STORY_TYPES.map((type) => (
             <button
               key={type}
               type="button"
-              className={(book.storyType ?? "fiction") === type ? "chip on" : "chip"}
-              onClick={() => onChange({ storyType: type })}
+              className={storyType === type ? "chip on" : "chip"}
+              onClick={() =>
+                onChange({
+                  storyType: type,
+                  kind: modeOf(type).defaultKind,
+                  genres: [],
+                })
+              }
             >
               {STORY_TYPE_LABEL[type]}
             </button>
@@ -78,7 +96,7 @@ export function StoryInfo({
       <fieldset>
         <legend>Géneros (até 3)</legend>
         <div className="story-type-row">
-          {STORY_GENRES.map((genre) => {
+          {genreOptions.map((genre) => {
             const on = genres.includes(genre);
             return (
               <button
@@ -87,7 +105,7 @@ export function StoryInfo({
                 className={on ? "chip on" : "chip"}
                 onClick={() => {
                   if (on) {
-                    onChange({ genres: genres.filter((g) => g !== genre) });
+                    onChange({ genres: genres.filter((item) => item !== genre) });
                     return;
                   }
                   if (genres.length >= 3) return;
@@ -105,7 +123,7 @@ export function StoryInfo({
         <span>Tags</span>
         <input
           value={tagsText}
-          placeholder="Separadas por espaço — ex.: margem luanda suspense"
+          placeholder="Separadas por espaço"
           onChange={(event) =>
             onChange({
               tags: event.target.value

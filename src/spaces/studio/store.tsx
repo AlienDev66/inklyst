@@ -34,6 +34,7 @@ import {
   type SheetKind,
   type TimelineEvent,
 } from "./books";
+import { modeOf } from "./projectMode";
 import {
   createCloudBook,
   loadCloudBooks,
@@ -134,6 +135,9 @@ type Store = {
   dismissConflict: () => void;
   keepLocalConflict: () => void;
   takeRemoteConflict: () => void;
+  syncState: "idle" | "saving" | "saved" | "error";
+  syncError: string | null;
+  retrySync: () => void;
 };
 
 const BooksContext = createContext<Store | null>(null);
@@ -191,10 +195,44 @@ export function BooksProvider({
   });
   const [hydrated, setHydrated] = useState(!cloud || demo);
   const [conflict, setConflict] = useState<{ bookId: string; remoteSavedAt: number } | null>(null);
+  const [syncState, setSyncState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [syncError, setSyncError] = useState<string | null>(null);
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autosaveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastAutosaveBody = useRef<Record<string, string>>({});
   const remoteSnapshot = useRef<Book | null>(null);
+  const syncGeneration = useRef(0);
+
+  async function pushBooksToCloud(list: Book[]) {
+    if (!cloudUserId) return;
+    const gen = ++syncGeneration.current;
+    setSyncState("saving");
+    setSyncError(null);
+    const failures: string[] = [];
+    for (const book of list) {
+      try {
+        await syncManuscriptTitle(book.id, book.title);
+        const chaptersResult = await syncAllChapterPositions(book);
+        if (chaptersResult && typeof chaptersResult === "object" && "error" in chaptersResult && chaptersResult.error) {
+          failures.push(`${book.title}: capítulos`);
+          continue;
+        }
+        const extrasResult = await syncBookExtras(book);
+        if (extrasResult && typeof extrasResult === "object" && "error" in extrasResult && extrasResult.error) {
+          failures.push(`${book.title}: estrutura (cenas/mundo)`);
+        }
+      } catch (error) {
+        failures.push(`${book.title}: ${error instanceof Error ? error.message : "rede"}`);
+      }
+    }
+    if (gen !== syncGeneration.current) return;
+    if (failures.length) {
+      setSyncState("error");
+      setSyncError(failures.slice(0, 2).join(" · "));
+      return;
+    }
+    setSyncState("saved");
+  }
 
   useEffect(() => {
     if (demo) {
@@ -240,16 +278,12 @@ export function BooksProvider({
     if (demo || !cloudUserId || !hydrated || books.length === 0) return;
     if (syncTimer.current) clearTimeout(syncTimer.current);
     syncTimer.current = setTimeout(() => {
-      for (const book of books) {
-        void syncManuscriptTitle(book.id, book.title);
-        void syncAllChapterPositions(book);
-        void syncBookExtras(book);
-      }
-    }, 700);
+      void pushBooksToCloud(books);
+    }, 900);
     return () => {
       if (syncTimer.current) clearTimeout(syncTimer.current);
     };
-  }, [books, cloudUserId, hydrated]);
+  }, [books, cloudUserId, hydrated, demo]);
 
   const booksRef = useRef(books);
   booksRef.current = books;
@@ -432,9 +466,15 @@ export function BooksProvider({
       },
       addChapter(bookId, partId) {
         update(bookId, (book) => {
+          const project = modeOf(book.storyType);
           const active = book.chapters.find((item) => item.id === book.activeChapterId);
           const resolved = partId ?? active?.partId ?? book.parts[0]?.id ?? null;
-          const created = { ...blankChapter(), partId: resolved };
+          const n = book.chapters.length + 1;
+          const created = {
+            ...blankChapter(),
+            partId: resolved,
+            title: project.defaultChapterTitle(n),
+          };
           const next = {
             ...book,
             activeChapterId: created.id,
@@ -452,16 +492,21 @@ export function BooksProvider({
         });
       },
       addScene(bookId, chapterId) {
-        const scene = blankScene();
-        update(bookId, (book) => ({
-          ...book,
-          activeChapterId: chapterId,
-          chapters: book.chapters.map((item) =>
-            item.id === chapterId
-              ? { ...item, scenes: [...item.scenes, scene], activeSceneId: scene.id }
-              : item,
-          ),
-        }));
+        update(bookId, (book) => {
+          const project = modeOf(book.storyType);
+          const chapter = book.chapters.find((item) => item.id === chapterId);
+          const n = (chapter?.scenes.length ?? 0) + 1;
+          const scene = { ...blankScene(), title: project.defaultSceneTitle(n) };
+          return {
+            ...book,
+            activeChapterId: chapterId,
+            chapters: book.chapters.map((item) =>
+              item.id === chapterId
+                ? { ...item, scenes: [...item.scenes, scene], activeSceneId: scene.id }
+                : item,
+            ),
+          };
+        });
       },
       removeScene(bookId, chapterId, sceneId) {
         update(bookId, (book) => ({
@@ -477,9 +522,14 @@ export function BooksProvider({
         }));
       },
       addPart(bookId) {
-        const part = blankPart();
-        update(bookId, (book) => ({ ...book, parts: [...book.parts, part] }));
-        return part.id;
+        let partId = "";
+        update(bookId, (book) => {
+          const project = modeOf(book.storyType);
+          const part = blankPart(project.defaultPartTitle(book.parts.length + 1));
+          partId = part.id;
+          return { ...book, parts: [...book.parts, part] };
+        });
+        return partId;
       },
       patchPart(bookId, partId, partial) {
         update(bookId, (book) => ({
@@ -686,6 +736,9 @@ export function BooksProvider({
         const book = books.find((item) => item.id === bookId);
         if (!book) return null;
         const { edition, cloudError } = await publishBookToShelf(book, visibility, cloudUserId);
+        if (cloudError && cloudUserId) {
+          return { editionId: edition.id, betaCode: edition.betaCode, cloudError };
+        }
         update(bookId, (currentBook) => ({
           ...currentBook,
           published: {
@@ -791,8 +844,14 @@ export function BooksProvider({
         setConflict(null);
         remoteSnapshot.current = null;
       },
+      syncState,
+      syncError,
+      retrySync() {
+        if (!cloudUserId) return;
+        void pushBooksToCloud(booksRef.current);
+      },
     };
-  }, [books, binder, cloud, cloudUserId, conflict, current, floor, hydrated, screen]);
+  }, [books, binder, cloud, cloudUserId, conflict, current, floor, hydrated, screen, syncError, syncState]);
 
   useEffect(() => {
     if (!hydrated) return;

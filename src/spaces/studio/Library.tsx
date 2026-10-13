@@ -9,7 +9,6 @@ import {
 import {
   COVER_HUES,
   KIND_LABEL,
-  STORY_GENRES,
   STORY_TYPE_LABEL,
   wordsOf,
   type Book,
@@ -17,6 +16,7 @@ import {
   type StoryType,
 } from "./books";
 import { coverArt, CoverFace, fileToCover } from "./Cover";
+import { ALL_STORY_TYPES, genresFor, modeOf } from "./projectMode";
 import { useBooks } from "./store";
 
 const EMPTY = {
@@ -33,13 +33,13 @@ const EMPTY = {
 
 const FOLDERS_KEY = "pagina-folders-v1";
 
-const GENRES: { name: string; line: string; kind: BookKind; grade: string }[] = [
-  { name: "Romance", line: "Amor, drama e relações.", kind: "romance", grade: "sepia" },
-  { name: "Thriller", line: "Mistério que prende.", kind: "romance", grade: "night" },
-  { name: "Ficção", line: "Mundos sem limites.", kind: "novela", grade: "copper" },
-  { name: "Não-ficção", line: "Histórias reais.", kind: "novela", grade: "moss" },
-  { name: "Conto", line: "Ideias que ficam.", kind: "conto", grade: "amber" },
-  { name: "Poesia", line: "Palavras que sentem.", kind: "conto", grade: "rose" },
+const MODE_CARDS: { type: StoryType; grade: string }[] = [
+  { type: "fiction", grade: "sepia" },
+  { type: "poetry", grade: "rose" },
+  { type: "prose", grade: "amber" },
+  { type: "nonfiction", grade: "moss" },
+  { type: "legal", grade: "night" },
+  { type: "fanfic", grade: "copper" },
 ];
 
 function loadFolders() {
@@ -145,8 +145,15 @@ export function Library() {
     setDraft((current) => ({ ...current, image }));
   }
 
-  function startGenre(kind: BookKind, name: string) {
-    setDraft({ ...EMPTY, kind, pitch: name === "Romance" || name === "Conto" ? "" : name });
+  function startMode(type: StoryType) {
+    const project = modeOf(type);
+    setDraft({
+      ...EMPTY,
+      storyType: type,
+      kind: project.defaultKind,
+      genre: project.genres[0] ?? "",
+      pitch: "",
+    });
     setCreating(true);
   }
 
@@ -189,15 +196,15 @@ export function Library() {
         </h1>
         <p className="hero-sub">
           {books.length === 0
-            ? "Imagina, escreve e publica — sem recomendações de leitura a meio do fluxo."
-            : "Manuscritos, ideias e mundos. A biblioteca de leitura fica no Reader."}
+            ? "Ficção, poesia, prosa, não-ficção ou direito — cada modo tem a sua estrutura."
+            : "Manuscritos por modo. A biblioteca de leitura fica no Reader."}
         </p>
         {books.length === 0 ? (
           <div className="onboarding-cta">
             <button type="button" className="ghost-btn" onClick={() => setCreating(true)}>
               <Plus size={16} /> Criar o primeiro livro
             </button>
-            <p className="fine">Ou escolhe um género em baixo para começar com forma certa.</p>
+            <p className="fine">Escolhe o modo em baixo — o editor adapta-se (poemas, artigos, cenas…).</p>
           </div>
         ) : null}
       </div>
@@ -245,6 +252,28 @@ export function Library() {
               <input value={draft.penName} placeholder="Opcional" aria-label="Nome na capa" onChange={(event) => setDraft({ ...draft, penName: event.target.value })} />
             </label>
             <label>
+              <span>Modo do projecto</span>
+              <select
+                aria-label="Modo do projecto"
+                value={draft.storyType}
+                onChange={(event) => {
+                  const storyType = event.target.value as StoryType;
+                  const project = modeOf(storyType);
+                  setDraft({
+                    ...draft,
+                    storyType,
+                    kind: project.defaultKind,
+                    genre: project.genres[0] ?? "",
+                  });
+                }}
+              >
+                {ALL_STORY_TYPES.map((type) => (
+                  <option key={type} value={type}>{STORY_TYPE_LABEL[type]}</option>
+                ))}
+              </select>
+              <small className="fine">{modeOf(draft.storyType).blurb}</small>
+            </label>
+            <label>
               <span>Forma</span>
               <select aria-label="Forma do livro" value={draft.kind} onChange={(event) => setDraft({ ...draft, kind: event.target.value as BookKind })}>
                 {(Object.keys(KIND_LABEL) as BookKind[]).map((kind) => (
@@ -257,27 +286,13 @@ export function Library() {
               <textarea value={draft.pitch} placeholder="Uma frase que te oriente. Não é o primeiro capítulo." aria-label="Sinopse do livro" onChange={(event) => setDraft({ ...draft, pitch: event.target.value })} />
             </label>
             <label>
-              <span>Tipo</span>
-              <select
-                aria-label="Tipo de história"
-                value={draft.storyType}
-                onChange={(event) =>
-                  setDraft({ ...draft, storyType: event.target.value as StoryType })
-                }
-              >
-                {(Object.keys(STORY_TYPE_LABEL) as StoryType[]).map((type) => (
-                  <option key={type} value={type}>{STORY_TYPE_LABEL[type]}</option>
-                ))}
-              </select>
-            </label>
-            <label>
               <span>Género</span>
               <select
                 aria-label="Género"
                 value={draft.genre}
                 onChange={(event) => setDraft({ ...draft, genre: event.target.value })}
               >
-                {STORY_GENRES.map((genre) => (
+                {genresFor(draft.storyType).map((genre) => (
                   <option key={genre} value={genre}>{genre}</option>
                 ))}
               </select>
@@ -347,7 +362,9 @@ export function Library() {
                 <article key={book.id} className="book-card">
                   <button type="button" className="book-open" onClick={() => openBook(book.id)} aria-label={`Abrir ${book.title}`}>
                     <span className="plate" style={{ backgroundImage: `url("${coverArt(book) ?? ""}")` }}>
-                      <span className="plate-caption">Capítulo {index + 1} de {book.chapters.length}</span>
+                      <span className="plate-caption">
+                        {modeOf(book.storyType).chapterLabel} {index + 1} de {book.chapters.length}
+                      </span>
                       <span className="plate-bar"><i style={{ width: `${progress(book)}%` }} /></span>
                       <span className="plate-pct">{progress(book)}%</span>
                     </span>
@@ -355,7 +372,7 @@ export function Library() {
                   <div className="book-meta">
                     <div>
                       <strong>{book.title}</strong>
-                      <em>{KIND_LABEL[book.kind]}</em>
+                      <em>{STORY_TYPE_LABEL[book.storyType ?? "fiction"]} · {KIND_LABEL[book.kind]}</em>
                       <small>{wordsOf(book).toLocaleString("pt-PT")} palavras · {edited(book.openedAt)}</small>
                     </div>
                     <button type="button" className="icon-btn" aria-label={`Opções de ${book.title}`} onClick={() => setMenu(menu === book.id ? null : book.id)}>
@@ -444,15 +461,23 @@ export function Library() {
           )}
 
           <div className="home-row">
-            <h2>Modelos e inspiração <span>{GENRES.length}</span></h2>
+            <h2>Começar por modo <span>{MODE_CARDS.length}</span></h2>
           </div>
           <div className="genre-row">
-            {GENRES.map((genre) => (
-              <button key={genre.name} type="button" className={`genre ${genre.grade}`} onClick={() => startGenre(genre.kind, genre.name)}>
-                <strong>{genre.name}</strong>
-                <small>{genre.line}</small>
-              </button>
-            ))}
+            {MODE_CARDS.map((card) => {
+              const project = modeOf(card.type);
+              return (
+                <button
+                  key={card.type}
+                  type="button"
+                  className={`genre ${card.grade}`}
+                  onClick={() => startMode(card.type)}
+                >
+                  <strong>{project.label}</strong>
+                  <small>{project.blurb}</small>
+                </button>
+              );
+            })}
           </div>
         </>
       )}

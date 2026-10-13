@@ -297,7 +297,7 @@ export function mergeSampleBooks(existing: ShelfEdition[]): ShelfEdition[] {
   return [...extras, ...existing];
 }
 
-/** Samples + local shelf + cloud — same bookId keeps the newest. */
+/** Local shelf + cloud — same bookId keeps the newest. Samples only fill an empty shelf. */
 export function mergeCatalog(...lists: ShelfEdition[][]): ShelfEdition[] {
   const byBook = new Map<string, ShelfEdition>();
   for (const list of lists) {
@@ -309,7 +309,10 @@ export function mergeCatalog(...lists: ShelfEdition[][]): ShelfEdition[] {
       }
     }
   }
-  return mergeSampleBooks([...byBook.values()].sort((a, b) => b.publishedAt - a.publishedAt));
+  const merged = [...byBook.values()].sort((a, b) => b.publishedAt - a.publishedAt);
+  const real = merged.filter((item) => !isSampleEdition(item.id));
+  if (real.length > 0) return real;
+  return mergeSampleBooks(merged);
 }
 
 export function notesForSample(editionId: string) {

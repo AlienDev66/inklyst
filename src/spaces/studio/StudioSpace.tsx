@@ -22,6 +22,7 @@ import { ExportMenu, ProfileMenu, ThemeToggle } from "./DockMenus";
 import { Explore, Goals, NotesHub, Preview, Stats, TrashHub } from "./Floors";
 import { Library } from "./Library";
 import { PdfExportDialog } from "./PdfExportDialog";
+import { modeOf } from "./projectMode";
 import { BooksProvider, useBooks, type Binder, type Screen } from "./store";
 import { Studio } from "./Studio";
 import "./styles.css";
@@ -38,16 +39,17 @@ const APP_LIBRARY: { id: Screen; label: string; icon: typeof BookOpen }[] = [
   { id: "preview", label: "Pré-visualizar", icon: Eye },
 ];
 
-const BOOK_NAV: { id: Binder; label: string; icon: typeof BookOpen }[] = [
-  { id: "manuscript", label: "Manuscrito", icon: PenLine },
-  { id: "structure", label: "Estrutura", icon: ScrollText },
-  { id: "research", label: "Mundo", icon: Globe2 },
-  { id: "timeline", label: "Cronologia", icon: Clock3 },
-  { id: "bible", label: "Bíblia", icon: BookOpen },
-  { id: "relations", label: "Relações", icon: GitBranch },
-  { id: "notes", label: "Notas", icon: NotebookPen },
-  { id: "progress", label: "Progresso", icon: ChartColumn },
-];
+const BOOK_NAV_ICONS: Record<Binder, typeof BookOpen> = {
+  manuscript: PenLine,
+  structure: ScrollText,
+  research: Globe2,
+  timeline: Clock3,
+  bible: BookOpen,
+  relations: GitBranch,
+  notes: NotebookPen,
+  progress: ChartColumn,
+  trash: Trash2,
+};
 
 export function StudioSpace({ cloudUserId }: { cloudUserId: string | null }) {
   return (
@@ -123,6 +125,22 @@ function StudioShell() {
           </div>
         </div>
       ) : null}
+      {store.cloud && store.syncState === "error" ? (
+        <div className="sync-banner error" role="status">
+          <div>
+            <strong>A sincronização falhou.</strong>
+            <p className="fine">{store.syncError || "O texto ficou neste browser — tenta outra vez."}</p>
+          </div>
+          <button type="button" className="ghost-btn" onClick={() => store.retrySync()}>
+            Tentar outra vez
+          </button>
+        </div>
+      ) : null}
+      {store.cloud && store.syncState === "saving" ? (
+        <div className="sync-banner" role="status">
+          <p className="fine">A guardar na cloud…</p>
+        </div>
+      ) : null}
       <div className="shell">
         <nav className="dock" aria-label={inBook ? "Livro" : "Studio"}>
           {inBook ? (
@@ -144,24 +162,53 @@ function StudioShell() {
               </div>
 
               <div className="dock-group" aria-label="Espaço do livro">
-                {BOOK_NAV.map((item) => {
-                  const Icon = item.icon;
-                  const on = store.binder === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      className={on ? "dock-btn on" : "dock-btn"}
-                      aria-current={on ? "page" : undefined}
-                      onClick={() => store.setBinder(item.id)}
-                    >
-                      <span className="dock-ico">
-                        <Icon size={18} />
-                      </span>
-                      {item.label}
-                    </button>
-                  );
-                })}
+                {(() => {
+                  const mode = modeOf(store.current.storyType);
+                  const allowed = new Set<Binder>([
+                    "manuscript",
+                    "notes",
+                    "progress",
+                    "trash",
+                    ...mode.binderExtra,
+                  ]);
+                  const labels: Partial<Record<Binder, string>> = {
+                    research: mode.usesWorld ? "Mundo" : "Fichas",
+                  };
+                  return (Object.keys(BOOK_NAV_ICONS) as Binder[])
+                    .filter((id) => allowed.has(id) && id !== "trash")
+                    .map((id) => {
+                      const Icon = BOOK_NAV_ICONS[id];
+                      const on = store.binder === id;
+                      const label =
+                        labels[id] ??
+                        ({
+                          manuscript: "Manuscrito",
+                          structure: "Estrutura",
+                          research: "Mundo",
+                          timeline: "Cronologia",
+                          bible: "Bíblia",
+                          relations: "Relações",
+                          notes: "Notas",
+                          progress: "Progresso",
+                          trash: "Lixo",
+                        }[id] ??
+                          id);
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          className={on ? "dock-btn on" : "dock-btn"}
+                          aria-current={on ? "page" : undefined}
+                          onClick={() => store.setBinder(id)}
+                        >
+                          <span className="dock-ico">
+                            <Icon size={18} />
+                          </span>
+                          {label}
+                        </button>
+                      );
+                    });
+                })()}
               </div>
 
               <div className="dock-rule" aria-hidden />

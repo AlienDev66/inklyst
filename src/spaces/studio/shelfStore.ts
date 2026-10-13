@@ -61,7 +61,6 @@ export async function publishBookToShelf(
     mature: book.mature,
     complete: book.status === "fechado",
   };
-  saveShelf(upsertEdition(loadShelf(), edition));
 
   let cloudError: string | null = null;
 
@@ -84,10 +83,15 @@ export async function publishBookToShelf(
       edition.publishedAt = Date.parse(remote.edition.published_at) || edition.publishedAt;
       saveShelf(upsertEdition(loadShelf(), edition));
     } else {
-      cloudError = remote.error ?? "A publicação na cloud falhou.";
+      cloudError = remote.error ?? "A publicação na cloud falhou — não ficou na estante pública.";
+      return { edition, cloudError };
     }
   } else if (isSupabaseConfigured && !ownerId) {
     cloudError = "Entra na conta para publicar na cloud (senão fica só neste browser).";
+    return { edition, cloudError };
+  } else {
+    // Offline / local-only demo path
+    saveShelf(upsertEdition(loadShelf(), edition));
   }
 
   if (typeof window !== "undefined") {

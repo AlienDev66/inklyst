@@ -7,17 +7,20 @@ import {
 } from "@pagina/domain";
 
 export type DocStatus = "ideia" | "rascunho" | "revisao" | "fechado";
-export type DocLabel = "cena" | "viragem" | "personagem" | "lugar";
-export type BookKind = "conto" | "novela" | "romance";
-export type StoryType = "fiction" | "fanfic" | "nonfiction" | "poetry";
+export type DocLabel = "cena" | "viragem" | "personagem" | "lugar" | "seccao" | "artigo" | "estrofe";
+export type BookKind = "conto" | "novela" | "romance" | "poesia" | "prosa" | "livro" | "direito";
+export type StoryType = "fiction" | "fanfic" | "nonfiction" | "poetry" | "prose" | "legal";
 
 export const STORY_TYPE_LABEL: Record<StoryType, string> = {
   fiction: "Ficção",
   fanfic: "Fanfic",
-  nonfiction: "Não-ficção",
   poetry: "Poesia",
+  prose: "Prosa",
+  nonfiction: "Não-ficção",
+  legal: "Direito",
 };
 
+/** Flat list for legacy selects; prefer genresFor(mode) from projectMode. */
 export const STORY_GENRES = [
   "Romance",
   "Thriller",
@@ -29,6 +32,13 @@ export const STORY_GENRES = [
   "Aventura",
   "Contemporâneo",
   "Poesia",
+  "Lírica",
+  "Crónica",
+  "Ensaio",
+  "Biografia",
+  "Doutrina",
+  "Manual académico",
+  "Geral",
 ] as const;
 export type SheetKind =
   | "nota"
@@ -239,12 +249,19 @@ export const LABEL_NAME: Record<DocLabel, string> = {
   viragem: "Viragem",
   personagem: "Personagem",
   lugar: "Lugar",
+  seccao: "Secção",
+  artigo: "Artigo",
+  estrofe: "Estrofe",
 };
 
 export const KIND_LABEL: Record<BookKind, string> = {
   conto: "Conto",
   novela: "Novela",
-  romance: "Romance",
+  romance: "Romance (ficção)",
+  poesia: "Livro de poemas",
+  prosa: "Prosa / crónica",
+  livro: "Livro (não-ficção)",
+  direito: "Livro de direito",
 };
 
 export const SHEET_LABEL: Record<SheetKind, string> = {
@@ -742,6 +759,65 @@ function revive(value: unknown): Book {
   };
 }
 
+function modeDefaults(storyType: StoryType): {
+  kind: BookKind;
+  targetWords: number;
+  chapterTitle: string;
+  label: DocLabel;
+  advisorPrompt: string;
+} {
+  switch (storyType) {
+    case "poetry":
+      return {
+        kind: "poesia",
+        targetWords: 3_000,
+        chapterTitle: "Poema 1",
+        label: "estrofe",
+        advisorPrompt: "Que imagem ou silêncio este poema ainda não ousou?",
+      };
+    case "prose":
+      return {
+        kind: "prosa",
+        targetWords: 15_000,
+        chapterTitle: "Texto 1",
+        label: "seccao",
+        advisorPrompt: "O que é que este texto ainda não disse com clareza?",
+      };
+    case "nonfiction":
+      return {
+        kind: "livro",
+        targetWords: 40_000,
+        chapterTitle: "Capítulo 1",
+        label: "seccao",
+        advisorPrompt: "Que argumento ou exemplo falta para o leitor acompanhar?",
+      };
+    case "legal":
+      return {
+        kind: "direito",
+        targetWords: 60_000,
+        chapterTitle: "Artigo 1",
+        label: "artigo",
+        advisorPrompt: "Que referência, excepção ou nuance jurídica falta aqui?",
+      };
+    case "fanfic":
+      return {
+        kind: "novela",
+        targetWords: 20_000,
+        chapterTitle: "Capítulo 1",
+        label: "cena",
+        advisorPrompt: "O que é que esta história ainda deve aos personagens e ao cânone?",
+      };
+    default:
+      return {
+        kind: "romance",
+        targetWords: 50_000,
+        chapterTitle: "Capítulo 1",
+        label: "cena",
+        advisorPrompt: "O que é que este livro ainda não te deixou escrever?",
+      };
+  }
+}
+
 export function blankBook(draft: {
   title: string;
   penName: string;
@@ -758,20 +834,22 @@ export function blankBook(draft: {
   const id = crypto.randomUUID();
   const chapterId = crypto.randomUUID();
   const now = Date.now();
+  const storyType = draft.storyType ?? "fiction";
+  const defaults = modeDefaults(storyType);
   return {
     id,
     title: draft.title.trim() || "Sem título",
     penName: draft.penName.trim(),
     pitch: draft.pitch.trim(),
-    kind: draft.kind,
+    kind: draft.kind || defaults.kind,
     cover: draft.cover,
-    storyType: draft.storyType ?? "fiction",
+    storyType,
     tags: draft.tags ?? [],
     genres: draft.genres ?? [],
     language: draft.language ?? "pt",
     copyright: draft.copyright ?? "all-rights",
     mature: draft.mature ?? false,
-    targetWords: 50000,
+    targetWords: defaults.targetWords,
     sessionTarget: 300,
     dailyTarget: 400,
     weeklyTarget: 2500,
@@ -782,17 +860,17 @@ export function blankBook(draft: {
     parts: [],
     advisor: parseAdvisorNote({
       kind: "question",
-      prompt: "O que é que este livro ainda não te deixou escrever?",
+      prompt: defaults.advisorPrompt,
     }),
     chapters: [
       {
         id: chapterId,
-        title: "Capítulo 1",
+        title: defaults.chapterTitle,
         body: "",
         synopsis: "",
         notes: "",
         status: "ideia",
-        label: "cena",
+        label: defaults.label,
         partId: null,
         scenes: [],
         activeSceneId: null,

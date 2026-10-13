@@ -2369,6 +2369,46 @@ body:has(.studio):not(:has(.lp-demo)) {
   color: var(--text);
   outline: none;
 }
+.prose-page.mode-verse {
+  font-size: 19px;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  max-width: 36em;
+}
+.prose-page.mode-legal {
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Newsreader, serif;
+  font-size: 16.5px;
+  line-height: 1.65;
+}
+.prose-page.mode-legal p { text-indent: 0; margin: 0.55em 0; }
+.prose-page.mode-essay {
+  font-size: 17.5px;
+  line-height: 1.8;
+  max-width: 38em;
+}
+.editor-verse .chapter-title {
+  font-family: Newsreader, Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+}
+.editor-legal .chapter-title {
+  font-variant: small-caps;
+  letter-spacing: 0.04em;
+}
+.sync-banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(18, 16, 14, 0.92);
+}
+.sync-banner.error {
+  border-bottom-color: rgba(220, 80, 80, 0.35);
+  background: rgba(48, 18, 16, 0.94);
+}
+.sync-banner .fine { margin: 2px 0 0; }
 .prose-page i,
 .prose-page em { font-style: italic; }
 .prose-page b,
