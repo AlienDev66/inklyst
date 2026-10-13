@@ -7,6 +7,7 @@ import {
   removeEdition,
   serializeShelf,
   upsertEdition,
+  type ReadingMode,
   type ShelfEdition,
   type ShelfState,
 } from "@pagina/domain";
@@ -35,12 +36,15 @@ export async function publishBookToShelf(
   ownerId?: string | null,
 ): Promise<PublishResult> {
   const chapters = compileChapters(book.chapters);
+  const storyType = (book.storyType ?? "fiction") as ReadingMode;
   const pages = paginateManuscript(
     book.chapters.map((chapter) => ({
       title: chapter.title,
       body: chapter.body,
       scenes: chapter.scenes,
     })),
+    storyType === "poetry" ? 560 : 420,
+    { verse: storyType === "poetry" },
   );
   const previous = loadShelf().editions.find((item) => item.bookId === book.id);
   const edition: ShelfEdition = {
@@ -60,6 +64,15 @@ export async function publishBookToShelf(
     tags: book.tags?.length ? book.tags : undefined,
     mature: book.mature,
     complete: book.status === "fechado",
+    storyType,
+    kind: book.kind,
+  };
+  const chaptersPayload = {
+    storyType,
+    kind: book.kind,
+    genre: edition.genre,
+    tags: edition.tags,
+    items: chapters,
   };
 
   let cloudError: string | null = null;
@@ -76,7 +89,7 @@ export async function publishBookToShelf(
       visibility,
       betaCode: edition.betaCode,
       pages,
-      chapters,
+      chapters: chaptersPayload,
     });
     if (remote.edition) {
       edition.id = remote.edition.id;

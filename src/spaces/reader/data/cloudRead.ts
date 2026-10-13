@@ -1,4 +1,4 @@
-import type { ShelfEdition } from "@pagina/domain";
+import { parseEditionChapters, type ShelfEdition } from "@pagina/domain";
 import {
   acceptPairByCode,
   createReadingPair,
@@ -26,6 +26,7 @@ function asPages(value: unknown): string[] {
 
 export function editionFromRemote(row: PublishedEdition): ShelfEdition {
   const authors = row.work_authors ?? [];
+  const parsed = parseEditionChapters(row.chapters);
   return {
     id: row.id,
     bookId: row.manuscript_id ?? row.work_id,
@@ -37,8 +38,12 @@ export function editionFromRemote(row: PublishedEdition): ShelfEdition {
     publishedAt: Date.parse(row.published_at) || Date.now(),
     visibility: row.visibility,
     betaCode: row.beta_code,
-    chapters: Array.isArray(row.chapters) ? (row.chapters as ShelfEdition["chapters"]) : [],
+    chapters: parsed.chapters,
     pages: asPages(row.pages),
+    storyType: parsed.storyType,
+    kind: parsed.kind,
+    genre: parsed.genre,
+    tags: parsed.tags,
   };
 }
 

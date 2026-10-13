@@ -2,6 +2,7 @@ import {
   canReadMargin,
   canRenderEdition,
   rankCircle,
+  readingModeOf,
   toPublicProcess,
   xpAmount,
   type ShelfEdition,
@@ -90,6 +91,7 @@ function Prose({
   onParagraphChange,
   commentCounts,
   onOpenParagraph,
+  readingMode = "fiction",
 }: {
   text: string;
   /** Unique per page open — scroll restore runs once, not on every para update. */
@@ -98,13 +100,24 @@ function Prose({
   onParagraphChange: (index: number) => void;
   commentCounts: Map<number, number>;
   onOpenParagraph: (index: number, excerpt: string) => void;
+  readingMode?: "fiction" | "fanfic" | "poetry" | "prose" | "nonfiction" | "legal";
 }) {
   const rootRef = useRef<HTMLDivElement>(null);
   const didRestore = useRef<string>("");
   const onChangeRef = useRef(onParagraphChange);
   onChangeRef.current = onParagraphChange;
   const [flash, setFlash] = useState<number | null>(null);
-  const parts = text.split(/\n\n+/).map((part) => part.trim()).filter(Boolean);
+  const verse = readingMode === "poetry";
+  const parts = verse
+    ? text
+        .replace(/\r\n/g, "\n")
+        .split(/\n\s*\n/)
+        .map((part) => part.trimEnd())
+        .filter(Boolean)
+    : text
+        .split(/\n\n+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
   const paras = parts.length ? parts : [text];
 
   useEffect(() => {
@@ -169,12 +182,16 @@ function Prose({
   }, [text, restoreKey]);
 
   return (
-    <div className="rd-prose has-markers" ref={rootRef}>
+    <div className={`rd-prose has-markers mode-${readingMode}`} ref={rootRef}>
       {paras.map((part, index) => {
         const count = commentCounts.get(index) ?? 0;
         return (
           <div key={index} className="rd-para-row" data-para={index}>
-            <p className={flash === index ? "is-resume" : undefined}>{part}</p>
+            {verse ? (
+              <pre className={flash === index ? "rd-verse is-resume" : "rd-verse"}>{part}</pre>
+            ) : (
+              <p className={flash === index ? "is-resume" : undefined}>{part}</p>
+            )}
             <button
               type="button"
               className={count ? "para-mark has" : "para-mark"}
@@ -471,6 +488,7 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
   }, [cloud, userId, edition?.id, screen]);
 
   const pages = edition?.pages ?? [];
+  const readingMode = edition ? readingModeOf(edition) : "fiction";
   /** Manuscript publish (Studio) ships pages in the snapshot — always readable digitally. */
   const hasManuscriptPages = pages.some((pageText) => pageText.trim().length > 0);
   const licensedFile = canRenderEdition({
@@ -1320,12 +1338,31 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
               </div>
 
               <motion.article
-                key={`${paper ? "paper" : "file"}-${edition.id}-${page}`}
-                className={paper ? "rd-leaf paper-mode" : "rd-leaf"}
+                key={`${paper ? "paper" : "file"}-${edition.id}-${page}-${readingMode}`}
+                className={[
+                  "rd-leaf",
+                  paper ? "paper-mode" : "",
+                  `rd-leaf--${readingMode}`,
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
                 initial={reduce ? false : { opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={transition}
               >
+                <p className="rd-mode-chip" aria-label="Modo de leitura">
+                  {readingMode === "poetry"
+                    ? "Poesia"
+                    : readingMode === "legal"
+                      ? "Direito"
+                      : readingMode === "prose"
+                        ? "Prosa"
+                        : readingMode === "nonfiction"
+                          ? "Não-ficção"
+                          : readingMode === "fanfic"
+                            ? "Fanfic"
+                            : "Ficção"}
+                </p>
                 {showDigitalText && pages.length ? (
                   <>
                     <TtsPlayer
@@ -1339,6 +1376,7 @@ export function ReaderSpace({ onOpenCreate }: { onOpenCreate: () => void }) {
                       onParagraphChange={onParagraphChange}
                       commentCounts={commentCounts}
                       onOpenParagraph={(index, excerpt) => setParaOpen({ index, excerpt })}
+                      readingMode={readingMode}
                     />
                   </>
                 ) : showDigitalText ? (
